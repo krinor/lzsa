@@ -59,7 +59,7 @@ PROC    lzsa1_decompress_speed  NEAR
 
 lzsa1_start:
         push    di              ;remember decompression offset
-        cld                     ;ensure string ops move forward
+        cld                     ;ensure string ops move forward (this should not be needed)
         mov     bx,offset SHR4table
         xor     cx,cx
 

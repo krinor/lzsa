@@ -51,7 +51,7 @@ SHR4table:
 
 lzsa1_decompress_speed:
         push    di              ;remember decompression offset
-        cld                     ;ensure string ops move forward
+        cld                     ;ensure string ops move forward (this should not be needed)
         mov     bx,SHR4table
         xor     cx,cx
 

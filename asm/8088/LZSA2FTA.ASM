@@ -62,22 +62,22 @@ LOCAL has_nybble
 has_nybble:
         mov     cl,4            ;swap 4 high and low bits of nybble
         ror     bl,cl
-        mov     cl,0FH
+        mov     cl,0Fh
         and     cl,bl
 ENDM
 
 lzsa2_speed_start:
         push    di              ;remember decompression offset
-        cld                     ;make string operations go forward
+        cld                     ;make string operations go forward (this should not be needed)
         xor     cx,cx
-        mov     bx,0100H        ;bx used by get_nybble
+        mov     bx,0100h        ;bx used by get_nybble
 
 @@decode_token:
         xchg    cx,ax           ;clear ah - cx is zero
         lodsb                   ;read token byte: XYZ|LL|MMMM
         mov     dx,ax           ;keep copy of token in dl
 
-        and     al,018H         ;isolate literals length in token (LL)
+        and     al,018h         ;isolate literals length in token (LL)
         jz      @@check_offset  ;no literals? stop decoding, go to matches
 
 ;At this point, al can be in three (unshifted) states: 1, 2, or 3.
@@ -85,15 +85,14 @@ lzsa2_speed_start:
         cmp     al,(2 shl 3)    ;LITERALS_RUN_LEN_V2? (original: cmp al,03h)
         jb      @@lit1b         ;LZSA2 output 1-byte more often, so test first
         je      @@lit2b
-
-        mov     cl,3
-        shr     al,cl           ;shift literals length into place
+        ;At this point we know AL can only be 24 (18h) so we can simply do this;
+        mov     al,3            ;literals length shifted into place
         get_nybble              ;cl := get extra literals length nybble
         add     al,cl           ;add len from token to nybble
-        cmp     al,012H         ;LITERALS_RUN_LEN_V2 + 15 ?
+        cmp     al,012h         ;LITERALS_RUN_LEN_V2 + 15 ?
         jne     @@got_literals  ;if not, we have the full literals count
         lodsb                   ;grab extra length byte
-        add     al,012H         ;overflow?
+        add     al,012h         ;overflow?
         jnc     @@got_literals_big ;if not, we have a big full literals count
         lodsw                   ;grab 16-bit extra length
 
@@ -120,7 +119,7 @@ lzsa2_speed_start:
 ;       test    dl,dl           ;check match offset mode in token (X bit)
 ;       js      @@rep_match_or_large_offset
 
-;       cmp     dl,040H         ;check if this is a 5 or 9-bit offset (Y bit)
+;       cmp     dl,040h         ;check if this is a 5 or 9-bit offset (Y bit)
 ;       jnb     @@offset_9_bit
 
         test    dl,0C0h
@@ -128,19 +127,19 @@ lzsa2_speed_start:
         jnz     @@offset_9_bit
 
         ;5 bit offset:
-        mov     al,020H         ;shift Z (offset bit 4) in place
+        mov     al,020h         ;shift Z (offset bit 4) in place
         and     al,dl
         shl     al,1
         shl     al,1
         get_nybble              ;get nybble for offset bits 0-3
         or      al,cl           ;merge nybble
         rol     al,1
-        xor     al,0E1H         ;set offset bits 7-5 to 1
+        xor     al,0E1h         ;set offset bits 7-5 to 1
         cbw                     ;set offset bits 15-8 to 1
         jmp     @@get_match_length
 
 @@rep_match_or_16_bit:
-        test    dl,020H         ;test bit Z (offset bit 8)
+        test    dl,020h         ;test bit Z (offset bit 8)
         jnz     @@repeat_match  ;rep-match
 
         ;16 bit offset:
@@ -152,26 +151,26 @@ lzsa2_speed_start:
         ;9 bit offset:
         lodsb                   ;get 8 bit offset from stream in A
         mov     ah,0FFh         ;set offset bits 15-8 to 1
-        test    dl,020H         ;test bit Z (offset bit 8)
+        test    dl,020h         ;test bit Z (offset bit 8)
         jz      @@get_match_length
         dec     ah              ;clear bit 8 if Z bit is clear
         jmp     @@get_match_length
 
 @@rep_match_or_large_offset:
-;       cmp     dl,0c0H         ;check if this is a 13-bit offset
+;       cmp     dl,0C0h         ;check if this is a 13-bit offset
                                 ;or a 16-bit offset/rep match (Y bit)
 ;       jnb     @@rep_match_or_16_bit
         jpe     @@rep_match_or_16_bit
 
         ;13 bit offset:
-        mov     ah,020H         ;shift Z (offset bit 12) in place
+        mov     ah,020h         ;shift Z (offset bit 12) in place
         and     ah,dl
         shl     ah,1
         shl     ah,1
         get_nybble              ;get nybble for offset bits 8-11
         or      ah,cl           ;merge nybble
         rol     ah,1
-        xor     ah,0E1H         ;set offset bits 15-13 to 1
+        xor     ah,0E1h         ;set offset bits 15-13 to 1
         sub     ah,2            ;substract 512
         lodsb                   ;load match offset bits 0-7
 
@@ -179,19 +178,19 @@ lzsa2_speed_start:
         mov     bp,ax           ;bp:=offset
 @@repeat_match:
         mov     ax,dx           ;ax: original token
-        and     al,07H          ;isolate match length in token (MMM)
+        and     al,07h          ;isolate match length in token (MMM)
         add     al,2            ;add MIN_MATCH_SIZE_V2
 
-        cmp     al,09H          ;MIN_MATCH_SIZE_V2 + MATCH_RUN_LEN_V2?
+        cmp     al,09h          ;MIN_MATCH_SIZE_V2 + MATCH_RUN_LEN_V2?
         jne     @@got_matchlen  ;no, we have full match length from token
 
         get_nybble              ;get extra literals length nybble
         add     al,cl           ;add len from token to nybble
-        cmp     al,018H         ;MIN_MATCH_SIZE_V2 + MATCH_RUN_LEN_V2 + 15?
+        cmp     al,018h         ;MIN_MATCH_SIZE_V2 + MATCH_RUN_LEN_V2 + 15?
         jne     @@got_matchlen  ;no, we have full match length from token
 
         lodsb                   ;grab extra length byte
-        add     al,018H         ;overflow?
+        add     al,018h         ;overflow?
         jnc     @@got_matchlen_big  ;if not, we have entire (big) length
         jz      @@done_decompressing ; detect EOD code
 

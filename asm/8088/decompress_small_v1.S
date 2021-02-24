@@ -33,7 +33,7 @@
 
 lzsa1_decompress:
    push di                 ; remember decompression offset
-   cld                     ; make string operations (lods, movs, stos..) move forward
+   cld                     ; make string operations (lods, movs, stos..) move forward (this should not be needed)
 
    xor cx,cx
 
@@ -42,20 +42,20 @@ lzsa1_decompress:
    lodsb                   ; read token byte: O|LLL|MMMM
    mov dx,ax               ; keep token in dl
 
-   and al,070H             ; isolate literals length in token (LLL)
+   and al,070h             ; isolate literals length in token (LLL)
    mov cl,4
    shr al,cl               ; shift literals length into place
 
-   cmp al,07H              ; LITERALS_RUN_LEN?
+   cmp al,07h              ; LITERALS_RUN_LEN?
    jne .got_literals       ; no, we have the full literals count from the token, go copy
 
    lodsb                   ; grab extra length byte
-   add al,07H              ; add LITERALS_RUN_LEN
+   add al,07h              ; add LITERALS_RUN_LEN
    jnc .got_literals       ; if no overflow, we have the full literals count, go copy
    jnz .mid_literals
 
    lodsw                   ; grab 16-bit extra length
-   db 81H                  ; mask inc ah/lodsb
+   db 81h                  ; mask inc ah/lodsb
                            ; (*like jmp short .got_literals but faster)
 
 .mid_literals:
@@ -72,7 +72,7 @@ lzsa1_decompress:
    dec cx
    xchg cx,ax              ; ah to 0xff - cx was zero from the rep movsb above
    lodsb
-   db 3CH                  ; mask lodsw
+   db 3Ch                  ; mask lodsw
                            ; (*like jmp short .get_match_length but faster)
 
 .get_long_offset:
@@ -80,14 +80,14 @@ lzsa1_decompress:
 
 .get_match_length:
    xchg dx,ax              ; dx: match offset  ax: original token
-   and al,0FH              ; isolate match length in token (MMMM)
+   and al,0Fh              ; isolate match length in token (MMMM)
    add al,3                ; add MIN_MATCH_SIZE
 
-   cmp al,012H             ; MATCH_RUN_LEN?
+   cmp al,012h             ; MATCH_RUN_LEN?
    jne .got_matchlen       ; no, we have the full match length from the token, go copy
 
    lodsb                   ; grab extra length byte
-   add al,012H             ; add MIN_MATCH_SIZE + MATCH_RUN_LEN
+   add al,012h             ; add MIN_MATCH_SIZE + MATCH_RUN_LEN
    jnc .got_matchlen       ; if no overflow, we have the entire length
    jnz .mid_matchlen
 
@@ -95,7 +95,7 @@ lzsa1_decompress:
    test ax,ax              ; bail if we hit EOD
    jz short .done_decompressing
 
-   db 81H                  ; mask inc ah/lodsb
+   db 81h                  ; mask inc ah/lodsb
                            ; (*like jmp short .got_literals but faster)
 .mid_matchlen:
    inc ah                  ; add 256

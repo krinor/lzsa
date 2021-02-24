@@ -1,7 +1,6 @@
 ;  decompress_small.S - space-efficient decompressor implementation for 8088
 ;
 ;  Copyright (C) 2019 Emmanuel Marty
-;  Additional optimizations by Krister Nordvall
 ;
 ;  This software is provided 'as-is', without any express or implied
 ;  warranty.  In no event will the authors be held liable for any damages
@@ -36,28 +35,28 @@ lzsa2_decompress:
    cld                     ; make string operations (lods, movs, stos..) move forward
 
    xor cx,cx
-   mov bx,0100H
+   mov bx,0100h
    xor bp,bp
 
 .decode_token:
-   xchg cx,ax              ; clear ah - cx is zero from above or from after rep movsb in .copy_match
+   mov ax,cx               ; clear ah - cx is zero from above or from after rep movsb in .copy_match
    lodsb                   ; read token byte: XYZ|LL|MMMM
    mov dx,ax               ; keep token in dl
 
-   and al,018H             ; isolate literals length in token (LL)
+   and al,018h             ; isolate literals length in token (LL)
    mov cl,3
    shr al,cl               ; shift literals length into place
 
-   cmp al,03H              ; LITERALS_RUN_LEN_V2?
+   cmp al,03h              ; LITERALS_RUN_LEN_V2?
    jne .got_literals       ; no, we have the full literals count from the token, go copy
 
    call .get_nibble        ; get extra literals length nibble
    add al,cl               ; add len from token to nibble
-   cmp al,012H             ; LITERALS_RUN_LEN_V2 + 15 ?
+   cmp al,012h             ; LITERALS_RUN_LEN_V2 + 15 ?
    jne .got_literals       ; if not, we have the full literals count, go copy
 
    lodsb                   ; grab extra length byte
-   add al,012H             ; overflow?
+   add al,012h             ; overflow?
    jnc .got_literals       ; if not, we have the full literals count, go copy
 
    lodsw                   ; grab 16-bit extra length
@@ -69,20 +68,20 @@ lzsa2_decompress:
    test dl,0C0h            ; check match offset mode in token (X bit)
    js .rep_match_or_large_offset
 
-   ;;cmp dl,040H             ; check if this is a 5 or 9-bit offset (Y bit)
+   ;;cmp dl,040h             ; check if this is a 5 or 9-bit offset (Y bit)
                            ; discovered via the test with bit 6 set
    xchg cx,ax              ; clear ah - cx is zero from the rep movsb above
    jne .offset_9_bit
 
                            ; 5 bit offset
-   cmp dl,020H             ; test bit 5
+   cmp dl,020h             ; test bit 5
    call .get_nibble_x
    jmp short .dec_offset_top
 
 .offset_9_bit:             ; 9 bit offset
    lodsb                   ; get 8 bit offset from stream in A
    dec ah                  ; set offset bits 15-8 to 1
-   test dl,020H            ; test bit Z (offset bit 8)
+   test dl,020h            ; test bit Z (offset bit 8)
    jz .get_match_length
 .dec_offset_top:
    dec ah                  ; clear bit 8 if Z bit is clear
@@ -90,19 +89,19 @@ lzsa2_decompress:
    jmp short .get_match_length
 
 .rep_match_or_large_offset:
-   ;;cmp dl,0c0H             ; check if this is a 13-bit offset or a 16-bit offset/rep match (Y bit)
+   ;;cmp dl,0C0h             ; check if this is a 13-bit offset or a 16-bit offset/rep match (Y bit)
    jpe .rep_match_or_16_bit
 
                            ; 13 bit offset
 
-   cmp dl,0A0H             ; test bit 5 (knowing that bit 7 is also set)
+   cmp dl,0A0h             ; test bit 5 (knowing that bit 7 is also set)
    xchg ah,al
    call .get_nibble_x
    sub al,2                ; substract 512
    jmp short .get_match_length_1
 
 .rep_match_or_16_bit:
-   test dl,020H            ; test bit Z (offset bit 8)
+   test dl,020h            ; test bit Z (offset bit 8)
    jnz .repeat_match       ; rep-match
 
                            ; 16 bit offset
@@ -116,19 +115,19 @@ lzsa2_decompress:
    xchg bp,ax              ; bp: offset
 .repeat_match:
    xchg ax,dx              ; ax: original token
-   and al,07H              ; isolate match length in token (MMM)
+   and al,07h              ; isolate match length in token (MMM)
    add al,2                ; add MIN_MATCH_SIZE_V2
 
-   cmp al,09H              ; MIN_MATCH_SIZE_V2 + MATCH_RUN_LEN_V2?
+   cmp al,09h              ; MIN_MATCH_SIZE_V2 + MATCH_RUN_LEN_V2?
    jne .got_matchlen       ; no, we have the full match length from the token, go copy
 
    call .get_nibble        ; get extra literals length nibble
    add al,cl               ; add len from token to nibble
-   cmp al,018H             ; MIN_MATCH_SIZE_V2 + MATCH_RUN_LEN_V2 + 15?
+   cmp al,018h             ; MIN_MATCH_SIZE_V2 + MATCH_RUN_LEN_V2 + 15?
    jne .got_matchlen       ; no, we have the full match length from the token, go copy
 
    lodsb                   ; grab extra length byte
-   add al,018H             ; overflow?
+   add al,018h             ; overflow?
    jnc .got_matchlen       ; if not, we have the entire length
    je short .done_decompressing ; detect EOD code
 
@@ -158,7 +157,7 @@ lzsa2_decompress:
    call .get_nibble        ; get nibble for offset bits 0-3
    or al,cl                ; merge nibble
    rol al,1
-   xor al,0E1H             ; set offset bits 7-5 to 1
+   xor al,0E1h             ; set offset bits 7-5 to 1
    ret
 
 .get_nibble:
@@ -172,6 +171,6 @@ lzsa2_decompress:
 .has_nibble:
    mov cl,4                ; swap 4 high and low bits of nibble
    ror bl,cl
-   mov cl,0FH
+   mov cl,0Fh
    and cl,bl
    ret

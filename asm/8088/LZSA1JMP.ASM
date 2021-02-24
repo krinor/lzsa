@@ -354,7 +354,7 @@ ENDM
 
 lzsa1_start:
         push    di              ;remember decompression offset
-        cld                     ;ensure string ops move forward
+        cld                     ;ensure string ops move forward (this should not be needed)
         xor     cx,cx
 
 decode_token:
